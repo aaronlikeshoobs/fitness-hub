@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Fitness Hub</title>
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" type="image/png" href="favicon.png" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Fitness Hub" />
+<meta name="theme-color" content="#0D1110" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0D1110;
+    --panel:#161C1A;
+    --line:#2A332F;
+    --text:#EAEFEC;
+    --muted:#8CA39A;
+    --accent:#4FD9AE;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{background:var(--bg);color:var(--text);height:100%;}
+  body{font-family:'Public Sans',-apple-system,sans-serif;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:520px;margin:0 auto;padding:max(28px,env(safe-area-inset-top)) 20px 40px;}
+  .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);margin-bottom:6px;}
+  h1{font-size:28px;font-weight:700;letter-spacing:-0.01em;margin-bottom:6px;}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:32px;}
+  .tiles{display:flex;flex-direction:column;gap:12px;}
+  a.tile{
+    display:flex;align-items:center;gap:14px;
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:18px 16px;text-decoration:none;color:var(--text);
+    transition:border-color .15s ease, transform .1s ease;
+  }
+  a.tile:active{transform:scale(0.98);border-color:var(--accent);}
+  .tile .icon{
+    width:44px;height:44px;border-radius:10px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(79,217,174,0.12);color:var(--accent);
+    font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:600;
+  }
+  .tile .info{flex:1;min-width:0;}
+  .tile .name{font-size:16px;font-weight:600;}
+  .tile .desc{font-size:12.5px;color:var(--muted);margin-top:2px;}
+  .tile .arrow{color:var(--muted);font-size:18px;}
+  footer{text-align:center;padding-top:36px;color:var(--muted);font-size:11px;font-family:'IBM Plex Mono',monospace;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Fitness Hub</div>
+  <h1>Your apps</h1>
+  <div class="sub">Pick one to open</div>
+
+  <div class="tiles">
+    <a class="tile" href="https://aaronlikeshoobs.github.io/workout-log/">
+      <div class="icon">W</div>
+      <div class="info">
+        <div class="name">Workout Log</div>
+        <div class="desc">Weekly program, PRs &amp; weight tracking</div>
+      </div>
+      <div class="arrow">&rsaquo;</div>
+    </a>
+
+    <a class="tile" href="https://aaronlikeshoobs.github.io/macro-log/">
+      <div class="icon">M</div>
+      <div class="info">
+        <div class="name">Macro Log</div>
+        <div class="desc">Daily calories, protein, fat &amp; carbs</div>
+      </div>
+      <div class="arrow">&rsaquo;</div>
+    </a>
+
+    <a class="tile" href="https://aaronlikeshoobs.github.io/vitals-log/">
+      <div class="icon">V</div>
+      <div class="info">
+        <div class="name">Vitals Log</div>
+        <div class="desc">Body comp, activity &amp; cycling — auto-synced</div>
+      </div>
+      <div class="arrow">&rsaquo;</div>
+    </a>
+  </div>
+
+  <footer>aaronlikeshoobs · fitness-hub</footer>
+</div>
+</body>
+</html>
