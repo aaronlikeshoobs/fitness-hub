@@ -49,6 +49,22 @@
   .tile .desc{font-size:13px;color:var(--muted);margin-top:3px;line-height:1.4;}
   .tile .arrow{color:var(--muted);font-size:22px;flex-shrink:0;}
   footer{text-align:center;padding-top:40px;color:var(--muted);font-size:11px;font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center;gap:6px;}
+
+  .today-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:28px;}
+  .today-head{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);margin-bottom:14px;display:flex;align-items:center;gap:6px;}
+  .today-row{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);}
+  .today-row:last-child{border-bottom:none;}
+  .today-row .em{font-size:18px;flex-shrink:0;width:24px;text-align:center;}
+  .today-row .txt{font-size:13.5px;line-height:1.5;flex:1;}
+  .today-row .txt b{font-weight:600;}
+  .today-skeleton{color:var(--muted);font-size:13px;font-family:'IBM Plex Mono',monospace;}
+
+  .sync-row{display:flex;gap:14px;margin-bottom:28px;flex-wrap:wrap;}
+  .sync-pill{display:flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:6px 12px;}
+  .sync-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+  .sync-dot.ok{background:var(--accent);}
+  .sync-dot.warn{background:#F2C94C;}
+  .sync-dot.bad{background:#FF6B6B;}
 </style>
 </head>
 <body>
@@ -57,30 +73,37 @@
   <h1>Your apps</h1>
   <div class="sub">Pick one to open</div>
 
-  <div class="tiles">
-    <a class="tile" href="https://aaronlikeshoobs.github.io/workout-log/">
+  <div class="today-card">
+    <div class="today-head">☀️ Today</div>
+    <div id="today-body"><div class="today-skeleton">Checking your apps&hellip;</div></div>
+  </div>
+
+  <div class="sync-row" id="sync-row"></div>
+
+  <div class="tiles" id="tiles">
+    <a class="tile" id="tile-workout" href="https://aaronlikeshoobs.github.io/workout-log/">
       <div class="icon">🏋️</div>
       <div class="info">
-        <div class="name">Workout Log</div>
-        <div class="desc">Weekly program, PRs &amp; weight tracking</div>
+        <div class="name">Training Log</div>
+        <div class="desc" id="desc-workout">Weekly program, PRs &amp; weight tracking</div>
       </div>
       <div class="arrow">&rsaquo;</div>
     </a>
 
-    <a class="tile" href="https://aaronlikeshoobs.github.io/macro-log/">
+    <a class="tile" id="tile-macro" href="https://aaronlikeshoobs.github.io/macro-log/">
       <div class="icon">🍽️</div>
       <div class="info">
         <div class="name">Macro Log</div>
-        <div class="desc">Daily calories, protein, fat &amp; carbs</div>
+        <div class="desc" id="desc-macro">Daily calories, protein, fat &amp; carbs</div>
       </div>
       <div class="arrow">&rsaquo;</div>
     </a>
 
-    <a class="tile" href="https://aaronlikeshoobs.github.io/vitals-log/">
+    <a class="tile" id="tile-vitals" href="https://aaronlikeshoobs.github.io/vitals-log/">
       <div class="icon">🫀</div>
       <div class="info">
         <div class="name">Vitals Log</div>
-        <div class="desc">Body comp, activity &amp; cycling — auto-synced</div>
+        <div class="desc" id="desc-vitals">Body comp, activity &amp; cycling — auto-synced</div>
       </div>
       <div class="arrow">&rsaquo;</div>
     </a>
@@ -88,5 +111,133 @@
 
   <footer>🔗 Aaron's Fitness Hub</footer>
 </div>
+
+<script>
+(function() {
+  const todayStr = () => {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  };
+  const DAY_ORDER = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+  const todayName = () => DAY_ORDER[(new Date().getDay() + 6) % 7];
+  const daysAgo = (dstr) => Math.floor((Date.now() - new Date(dstr + 'T00:00:00').getTime()) / 86400000);
+
+  async function getJSON(url) {
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) throw new Error(String(res.status));
+    return res.json();
+  }
+
+  // ---- Training: pull PROGRAM out of the live app + today's logged data ----
+  async function trainingStatus() {
+    const [html, data] = await Promise.all([
+      fetch('https://raw.githubusercontent.com/aaronlikeshoobs/workout-log/main/index.html', { cache: 'no-store' }).then(r => r.text()),
+      getJSON('https://raw.githubusercontent.com/aaronlikeshoobs/workout-log/main/data.json').catch(() => ({})),
+    ]);
+    const m = html.match(/const PROGRAM = (\{[\s\S]*?\});\s*\n\s*const DAY_ORDER/);
+    if (!m) throw new Error('program not found');
+    const PROGRAM = new Function('return ' + m[1])();
+    const weeks = Object.keys(PROGRAM).map(Number).sort((a,b) => a-b);
+    const week = weeks[weeks.length - 1];
+    const day = PROGRAM[week].days.find(d => d.title === todayName());
+    if (!day) return { text: 'No training day scheduled today.', done: true, priority: 0, sub: 'Rest / recovery day' };
+    const total = day.exercises.length;
+    const done = day.exercises.filter(ex => data[`${week}:${ex.id}`]?.done).length;
+    if (done === total) {
+      return { text: `<b>${day.focus}</b> — all ${total} exercises logged. Nice work.`, done: true, priority: 0 };
+    }
+    return {
+      text: `<b>${day.focus}</b> — ${done}/${total} logged. ${done === 0 ? "Haven't started yet." : 'Keep going.'}`,
+      done: false,
+      priority: 2,
+    };
+  }
+
+  // ---- Macros: today's protein/cal vs target ----
+  async function macroStatus() {
+    const data = await getJSON('https://raw.githubusercontent.com/aaronlikeshoobs/macro-log/main/data.json');
+    const today = todayStr();
+    const entries = (data.entries || []).filter(e => e.date === today && e.kind !== 'symptom' && e.status !== 'pending' && e.status !== 'estimating');
+    const t = entries.reduce((a,e) => ({ cal: a.cal+(e.cal||0), protein: a.protein+(e.protein||0) }), { cal:0, protein:0 });
+    const tg = data.targets || { cal: 1750, protein: 170 };
+    const proteinLeft = tg.protein - t.protein;
+    const calLeft = tg.cal - t.cal;
+    const hour = new Date().getHours();
+    const behindLate = proteinLeft > 20 && hour >= 14;
+    if (entries.length === 0 && hour < 10) {
+      return { text: `Nothing logged yet today. Target: <b>${tg.protein}g protein</b>, ${tg.cal} kcal.`, priority: behindLate ? 1 : 0 };
+    }
+    if (proteinLeft <= 0) {
+      return { text: `Protein target hit (${t.protein}/${tg.protein}g). ${calLeft > 0 ? calLeft + ' kcal remaining.' : calLeft + ' kcal over.'}`, priority: 0 };
+    }
+    return {
+      text: `<b>${proteinLeft}g protein</b> to go (${t.protein}/${tg.protein}g) &middot; ${calLeft} kcal remaining`,
+      priority: behindLate ? 1 : 0,
+    };
+  }
+
+  // ---- Vitals: only surface if something's actually stale/notable ----
+  async function vitalsStatus() {
+    const data = await getJSON('https://raw.githubusercontent.com/aaronlikeshoobs/vitals-log/main/data.json');
+    const KEY = ['weight', 'resting_hr', 'hrv'];
+    let staleMetric = null, maxStale = 0;
+    KEY.forEach(id => {
+      const hist = (data[id] || []).slice().sort((a,b) => a.date.localeCompare(b.date));
+      const latest = hist[hist.length - 1];
+      if (latest) {
+        const age = daysAgo(latest.date);
+        if (age > maxStale) { maxStale = age; staleMetric = id; }
+      }
+    });
+    if (maxStale > 3) {
+      const label = { weight: 'Weight', resting_hr: 'Resting HR', hrv: 'HRV' }[staleMetric];
+      return { text: `⚠️ ${label} hasn't synced in <b>${maxStale} days</b> — worth a check.`, priority: 3, notable: true };
+    }
+    return { text: 'All key metrics synced recently. Nothing urgent.', priority: -1, notable: false };
+  }
+
+  function row(emoji, html) {
+    return `<div class="today-row"><div class="em">${emoji}</div><div class="txt">${html}</div></div>`;
+  }
+
+  async function build() {
+    const results = await Promise.allSettled([trainingStatus(), macroStatus(), vitalsStatus()]);
+    const [tr, mc, vt] = results.map(r => r.status === 'fulfilled' ? r.value : null);
+
+    // TODAY card
+    const todayBody = document.getElementById('today-body');
+    let html = '';
+    html += row('🏋️', tr ? tr.text : "Couldn't reach Training Log — check your connection.");
+    html += row('🍽️', mc ? mc.text : "Couldn't reach Macro Log — check your connection.");
+    if (vt && vt.notable) html += row('🫀', vt.text);
+    todayBody.innerHTML = html || '<div class="today-skeleton">Nothing to flag right now.</div>';
+
+    if (tr) document.getElementById('desc-workout').textContent = tr.done ? 'Done for today' : "Today's session isn't finished";
+    if (mc) document.getElementById('desc-macro').textContent = mc.priority >= 1 ? 'Protein behind target' : 'On track for today';
+    if (vt) document.getElementById('desc-vitals').textContent = vt.notable ? 'Something needs a look' : 'Body comp, activity & cycling — auto-synced';
+
+    // Dynamic tile order
+    const priorities = {
+      workout: tr ? tr.priority : 0,
+      macro: mc ? mc.priority : 0,
+      vitals: vt ? vt.priority : -1,
+    };
+    const order = Object.keys(priorities).sort((a,b) => priorities[b] - priorities[a]);
+    const tilesEl = document.getElementById('tiles');
+    order.forEach(key => tilesEl.appendChild(document.getElementById('tile-' + key)));
+
+    // Sync-health pills
+    const syncRow = document.getElementById('sync-row');
+    const pill = (label, state) => `<div class="sync-pill"><span class="sync-dot ${state}"></span>${label}</div>`;
+    let pills = '';
+    pills += pill('Training ' + (tr ? 'synced' : 'unreachable'), tr ? 'ok' : 'bad');
+    pills += pill('Macro ' + (mc ? 'synced' : 'unreachable'), mc ? 'ok' : 'bad');
+    pills += pill('Vitals ' + (vt ? (vt.notable ? 'check' : 'synced') : 'unreachable'), vt ? (vt.notable ? 'warn' : 'ok') : 'bad');
+    syncRow.innerHTML = pills;
+  }
+
+  build();
+})();
+</script>
 </body>
 </html>
