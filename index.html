@@ -13,6 +13,7 @@
 <meta name="theme-color" content="#0D1110" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://aaronlikeshoobs.github.io/macro-log/finish-your-day.js"></script>
 <style>
   :root{
     --bg:#0D1110;
@@ -158,24 +159,15 @@
     };
   }
 
-  // Same quick-protein list used in Macro Log's "Finish your day" — kept in sync manually.
-  const PROTEIN_BOOSTERS = [
-    { name: 'Egg whites (3)', cal: 51, protein: 11 },
-    { name: 'Turkey breast slices (3 oz)', cal: 90, protein: 19 },
-    { name: 'Low-fat cottage cheese (1/2 cup)', cal: 90, protein: 12 },
-    { name: 'Nonfat Greek yogurt (170g)', cal: 100, protein: 18 },
-    { name: 'Canned tuna in water (1 can)', cal: 110, protein: 24 },
-    { name: 'Whey protein shake (1 scoop)', cal: 120, protein: 24 },
-    { name: 'Chicken breast (3 oz)', cal: 140, protein: 26 },
-  ];
+  // Food list + picking logic live in Macro Log's finish-your-day.js — shared, not duplicated here.
   function finishYourDay(t, tg) {
-    const proteinLeft = tg.protein - t.protein;
-    if (proteinLeft <= 0) return null;
-    const covering = PROTEIN_BOOSTERS.filter(b => b.protein >= proteinLeft).sort((a,b) => a.cal - b.cal);
-    const pick = covering[0] || [...PROTEIN_BOOSTERS].sort((a,b) => (b.protein/b.cal) - (a.protein/a.cal))[0];
-    const delta = (t.cal + pick.cal) - tg.cal;
+    if (!window.FinishYourDay) return null;
+    const picks = window.FinishYourDay.compute(t, tg, 1);
+    if (!picks.length) return null;
+    const p = picks[0];
+    const delta = (t.cal + p.cal) - tg.cal;
     const deltaText = delta > 0 ? `puts you ${delta} kcal over` : `still ${-delta} kcal under`;
-    return `${pick.name} (${pick.cal} kcal) — ${deltaText}`;
+    return `${p.name} (${p.cal} kcal) \u2014 ${deltaText}`;
   }
 
   // ---- Macros: today's protein/cal vs target ----
