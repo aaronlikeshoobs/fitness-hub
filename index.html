@@ -128,21 +128,30 @@
     return res.json();
   }
 
-  // ---- Training: pull PROGRAM out of the live app + today's logged data ----
+  // ---- Training: pull program.json + today's logged data ----
+  function parseSetsReps(target) {
+    const m = (target || '').match(/(\d+)\s*x\s*(\d+)/i);
+    return m ? { sets: parseInt(m[1],10), reps: parseInt(m[2],10) } : null;
+  }
   async function trainingStatus() {
-    const [html, data] = await Promise.all([
-      fetch('https://raw.githubusercontent.com/aaronlikeshoobs/workout-log/main/index.html', { cache: 'no-store' }).then(r => r.text()),
+    const [PROGRAM, data] = await Promise.all([
+      getJSON('https://raw.githubusercontent.com/aaronlikeshoobs/workout-log/main/program.json'),
       getJSON('https://raw.githubusercontent.com/aaronlikeshoobs/workout-log/main/data.json').catch(() => ({})),
     ]);
-    const m = html.match(/const PROGRAM = (\{[\s\S]*?\});\s*\n\s*const DAY_ORDER/);
-    if (!m) throw new Error('program not found');
-    const PROGRAM = new Function('return ' + m[1])();
     const weeks = Object.keys(PROGRAM).map(Number).sort((a,b) => a-b);
     const week = weeks[weeks.length - 1];
     const day = PROGRAM[week].days.find(d => d.title === todayName());
     if (!day) return { text: 'No training day scheduled today.', done: true, priority: 0, sub: 'Rest / recovery day' };
     const total = day.exercises.length;
-    const done = day.exercises.filter(ex => data[`${week}:${ex.id}`]?.done).length;
+    const done = day.exercises.filter(ex => {
+      const log = data[`${week}:${ex.id}`];
+      if (!log) return false;
+      if (log.sets !== undefined) {
+        const sr = parseSetsReps(ex.target);
+        return sr ? log.sets.length >= sr.sets : log.sets.length > 0;
+      }
+      return !!log.done; // bodyweight/cardio exercises stay checkbox-based
+    }).length;
     if (done === total) {
       return { text: `<b>${day.focus}</b> — all ${total} exercises logged. Nice work.`, done: true, priority: 0 };
     }
