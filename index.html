@@ -158,6 +158,26 @@
     };
   }
 
+  // Same quick-protein list used in Macro Log's "Finish your day" — kept in sync manually.
+  const PROTEIN_BOOSTERS = [
+    { name: 'Egg whites (3)', cal: 51, protein: 11 },
+    { name: 'Turkey breast slices (3 oz)', cal: 90, protein: 19 },
+    { name: 'Low-fat cottage cheese (1/2 cup)', cal: 90, protein: 12 },
+    { name: 'Nonfat Greek yogurt (170g)', cal: 100, protein: 18 },
+    { name: 'Canned tuna in water (1 can)', cal: 110, protein: 24 },
+    { name: 'Whey protein shake (1 scoop)', cal: 120, protein: 24 },
+    { name: 'Chicken breast (3 oz)', cal: 140, protein: 26 },
+  ];
+  function finishYourDay(t, tg) {
+    const proteinLeft = tg.protein - t.protein;
+    if (proteinLeft <= 0) return null;
+    const covering = PROTEIN_BOOSTERS.filter(b => b.protein >= proteinLeft).sort((a,b) => a.cal - b.cal);
+    const pick = covering[0] || [...PROTEIN_BOOSTERS].sort((a,b) => (b.protein/b.cal) - (a.protein/a.cal))[0];
+    const delta = (t.cal + pick.cal) - tg.cal;
+    const deltaText = delta > 0 ? `puts you ${delta} kcal over` : `still ${-delta} kcal under`;
+    return `${pick.name} (${pick.cal} kcal) — ${deltaText}`;
+  }
+
   // ---- Macros: today's protein/cal vs target ----
   async function macroStatus() {
     const data = await getJSON('https://raw.githubusercontent.com/aaronlikeshoobs/macro-log/main/data.json');
@@ -173,15 +193,18 @@
     const calLeft = tg.cal - t.cal;
     const hour = new Date().getHours();
     const behindLate = proteinLeft > 20 && hour >= 14;
+    const dinnerLogged = entries.some(e => e.meal === 'Dinner');
+    const finisher = dinnerLogged ? finishYourDay(t, tg) : null;
     if (entries.length === 0 && hour < 10) {
-      return { text: `Nothing logged yet today. Target: <b>${tg.protein}g protein</b>, ${tg.cal} kcal.`, priority: behindLate ? 1 : 0 };
+      return { text: `Nothing logged yet today. Target: <b>${tg.protein}g protein</b>, ${tg.cal} kcal.`, priority: behindLate ? 1 : 0, finisher };
     }
     if (proteinLeft <= 0) {
-      return { text: `Protein target hit (${t.protein}/${tg.protein}g). ${calLeft > 0 ? calLeft + ' kcal remaining.' : calLeft + ' kcal over.'}`, priority: 0 };
+      return { text: `Protein target hit (${t.protein}/${tg.protein}g). ${calLeft > 0 ? calLeft + ' kcal remaining.' : calLeft + ' kcal over.'}`, priority: 0, finisher };
     }
     return {
       text: `<b>${proteinLeft}g protein</b> to go (${t.protein}/${tg.protein}g) &middot; ${calLeft} kcal remaining`,
       priority: behindLate ? 1 : 0,
+      finisher,
     };
   }
 
@@ -218,6 +241,7 @@
     let html = '';
     html += row('🏋️', tr ? tr.text : "Couldn't reach Training Log — check your connection.");
     html += row('🍽️', mc ? mc.text : "Couldn't reach Macro Log — check your connection.");
+    if (mc && mc.finisher) html += row('🥚', `Finish your day: <b>${mc.finisher}</b>`);
     if (vt && vt.notable) html += row('🫀', vt.text);
     todayBody.innerHTML = html || '<div class="today-skeleton">Nothing to flag right now.</div>';
 
