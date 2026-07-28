@@ -52,13 +52,21 @@
   footer{text-align:center;padding-top:20px;color:var(--muted);font-size:11px;font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center;gap:6px;}
 
   .today-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:16px;}
-  .today-head{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
-  .today-row{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);}
-  .today-row:last-child{border-bottom:none;}
-  .today-row .em{font-size:18px;flex-shrink:0;width:24px;text-align:center;}
-  .today-row .txt{font-size:13.5px;line-height:1.5;flex:1;}
-  .today-row .txt b{font-weight:600;}
+  .today-head{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);margin-bottom:10px;display:flex;align-items:center;gap:6px;}
   .today-skeleton{color:var(--muted);font-size:13px;font-family:'IBM Plex Mono',monospace;}
+
+  .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  .stat-block{background:rgba(79,217,174,0.05);border:1px solid var(--line);border-radius:10px;padding:10px 4px 8px;text-align:center;}
+  .stat-value{font-family:'IBM Plex Mono',monospace;font-size:19px;font-weight:700;line-height:1.1;}
+  .stat-value.good{color:var(--accent);}
+  .stat-value.warn{color:#F2C94C;}
+  .stat-value.over{color:#FF6B6B;}
+  .stat-label{font-family:'IBM Plex Mono',monospace;font-size:8.5px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-top:4px;}
+  .stat-sub{font-size:10.5px;color:var(--muted);text-align:center;margin-top:8px;}
+
+  .today-line{display:flex;align-items:flex-start;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:12.5px;line-height:1.45;}
+  .today-line .em{flex-shrink:0;font-size:15px;width:20px;text-align:center;}
+  .today-line b{font-weight:600;}
 
   .sync-row{display:flex;gap:8px;margin-bottom:18px;flex-wrap:nowrap;}
   .sync-pill{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:7px 6px;white-space:nowrap;}
@@ -66,6 +74,8 @@
   .sync-dot.ok{background:var(--accent);}
   .sync-dot.warn{background:#F2C94C;}
   .sync-dot.bad{background:#FF6B6B;}
+
+  a.tile.urgent{border-color:var(--accent);box-shadow:0 0 0 1px rgba(79,217,174,0.35);}
 </style>
 </head>
 <body>
@@ -138,7 +148,7 @@
     const weeks = Object.keys(PROGRAM).map(Number).sort((a,b) => a-b);
     const week = weeks[weeks.length - 1];
     const day = PROGRAM[week].days.find(d => d.title === todayName());
-    if (!day) return { text: 'No training day scheduled today.', done: true, priority: 0, sub: 'Rest / recovery day' };
+    if (!day) return { done: true, total: 0, doneCount: 0, focus: 'Rest day', priority: 0 };
     const total = day.exercises.length;
     const done = day.exercises.filter(ex => {
       const log = data[`${week}:${ex.id}`];
@@ -149,13 +159,12 @@
       }
       return !!log.done; // bodyweight/cardio exercises stay checkbox-based
     }).length;
-    if (done === total) {
-      return { text: `<b>${day.focus}</b> — all ${total} exercises logged. Nice work.`, done: true, priority: 0 };
-    }
     return {
-      text: `<b>${day.focus}</b> — ${done}/${total} logged. ${done === 0 ? "Haven't started yet." : 'Keep going.'}`,
-      done: false,
-      priority: 2,
+      done: done === total,
+      doneCount: done,
+      total,
+      focus: day.focus,
+      priority: done === total ? 0 : 2,
     };
   }
 
@@ -187,14 +196,14 @@
     const behindLate = proteinLeft > 20 && hour >= 14;
     const dinnerLogged = entries.some(e => e.meal === 'Dinner');
     const finisher = dinnerLogged ? finishYourDay(t, tg) : null;
-    if (entries.length === 0 && hour < 10) {
-      return { text: `Nothing logged yet today. Target: <b>${tg.protein}g protein</b>, ${tg.cal} kcal.`, priority: behindLate ? 1 : 0, finisher };
-    }
-    if (proteinLeft <= 0) {
-      return { text: `Protein target hit (${t.protein}/${tg.protein}g). ${calLeft > 0 ? calLeft + ' kcal remaining.' : calLeft + ' kcal over.'}`, priority: 0, finisher };
-    }
     return {
-      text: `<b>${proteinLeft}g protein</b> to go (${t.protein}/${tg.protein}g) &middot; ${calLeft} kcal remaining`,
+      proteinConsumed: t.protein,
+      proteinTarget: tg.protein,
+      proteinMet: proteinLeft <= 0,
+      calConsumed: t.cal,
+      calTarget: tg.cal,
+      calLeft,
+      hasEntries: entries.length > 0,
       priority: behindLate ? 1 : 0,
       finisher,
     };
@@ -220,36 +229,55 @@
     return { text: 'All key metrics synced recently. Nothing urgent.', priority: -1, notable: false };
   }
 
-  function row(emoji, html) {
-    return `<div class="today-row"><div class="em">${emoji}</div><div class="txt">${html}</div></div>`;
+  function statBlock(value, label, cls) {
+    return `<div class="stat-block"><div class="stat-value ${cls||''}">${value}</div><div class="stat-label">${label}</div></div>`;
   }
 
   async function build() {
     const results = await Promise.allSettled([trainingStatus(), macroStatus(), vitalsStatus()]);
     const [tr, mc, vt] = results.map(r => r.status === 'fulfilled' ? r.value : null);
 
-    // TODAY card
+    // TODAY card — compact stat grid instead of sentences
     const todayBody = document.getElementById('today-body');
-    let html = '';
-    html += row('🏋️', tr ? tr.text : "Couldn't reach Training Log — check your connection.");
-    html += row('🍽️', mc ? mc.text : "Couldn't reach Macro Log — check your connection.");
-    if (mc && mc.finisher) html += row('🥚', `Finish your day: <b>${mc.finisher}</b>`);
-    if (vt && vt.notable) html += row('🫀', vt.text);
-    todayBody.innerHTML = html || '<div class="today-skeleton">Nothing to flag right now.</div>';
+    if (!tr && !mc) {
+      todayBody.innerHTML = '<div class="today-skeleton">Couldn\'t reach your apps — check your connection.</div>';
+    } else {
+      let html = '<div class="stat-grid">';
+      html += tr
+        ? statBlock(tr.total ? `${tr.doneCount}/${tr.total}` : '\u2014', 'Training', tr.done ? 'good' : (tr.doneCount === 0 ? 'warn' : ''))
+        : statBlock('\u2014', 'Training');
+      html += mc
+        ? statBlock(`${mc.proteinConsumed}/${mc.proteinTarget}g`, 'Protein', mc.proteinMet ? 'good' : (mc.priority >= 1 ? 'warn' : ''))
+        : statBlock('\u2014', 'Protein');
+      html += mc
+        ? statBlock(mc.calLeft >= 0 ? mc.calLeft : `+${-mc.calLeft}`, mc.calLeft >= 0 ? 'Kcal Left' : 'Kcal Over', mc.calLeft < 0 ? 'over' : '')
+        : statBlock('\u2014', 'Kcal Left');
+      html += '</div>';
+      if (tr && tr.focus && tr.total > 0) {
+        html += `<div class="stat-sub">${tr.focus}</div>`;
+      }
+      if (mc && mc.finisher) {
+        html += `<div class="today-line"><span class="em">🥚</span><span>Finish your day: <b>${mc.finisher}</b></span></div>`;
+      }
+      if (vt && vt.notable) {
+        html += `<div class="today-line"><span class="em">🫀</span><span>${vt.text}</span></div>`;
+      }
+      todayBody.innerHTML = html;
+    }
 
-    if (tr) document.getElementById('desc-workout').textContent = tr.done ? 'Done for today' : "Today's session isn't finished";
+    if (tr) document.getElementById('desc-workout').textContent = tr.total === 0 ? 'Rest day' : (tr.done ? 'Done for today' : "Today's session isn't finished");
     if (mc) document.getElementById('desc-macro').textContent = mc.priority >= 1 ? 'Protein behind target' : 'On track for today';
     if (vt) document.getElementById('desc-vitals').textContent = vt.notable ? 'Something needs a look' : 'Body comp, activity & cycling — auto-synced';
 
-    // Dynamic tile order
-    const priorities = {
-      workout: tr ? tr.priority : 0,
-      macro: mc ? mc.priority : 0,
-      vitals: vt ? vt.priority : -1,
+    // Fixed tile order, preserved for spatial memory — urgency shown via accent border instead of reordering.
+    const urgent = {
+      workout: !!(tr && tr.priority >= 2),
+      macro: !!(mc && mc.priority >= 1),
+      vitals: !!(vt && vt.notable),
     };
-    const order = Object.keys(priorities).sort((a,b) => priorities[b] - priorities[a]);
-    const tilesEl = document.getElementById('tiles');
-    order.forEach(key => tilesEl.appendChild(document.getElementById('tile-' + key)));
+    Object.keys(urgent).forEach(key => {
+      document.getElementById('tile-' + key).classList.toggle('urgent', urgent[key]);
+    });
 
     // Sync-health pills
     const syncRow = document.getElementById('sync-row');
