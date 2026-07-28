@@ -31,14 +31,15 @@
   h1{font-size:30px;font-weight:700;letter-spacing:-0.01em;margin-bottom:6px;}
   .sub{color:var(--muted);font-size:13.5px;margin-bottom:36px;}
   .tiles{display:flex;flex-direction:column;gap:10px;}
-  a.tile{
+  .tile{
+    width:100%; text-align:left; font-family:inherit; -webkit-appearance:none; appearance:none;
     display:flex;align-items:center;gap:14px;
     background:var(--panel);border:1px solid var(--line);border-radius:14px;
     padding:14px 16px;text-decoration:none;color:var(--text);
     min-height:64px;
     transition:border-color .15s ease, transform .1s ease, background .15s ease;
   }
-  a.tile:active{transform:scale(0.97);border-color:var(--accent);background:#1B2320;}
+  .tile:active{transform:scale(0.97);border-color:var(--accent);background:#1B2320;}
   .tile .icon{
     width:52px;height:52px;border-radius:14px;flex-shrink:0;
     display:flex;align-items:center;justify-content:center;
@@ -75,7 +76,10 @@
   .sync-dot.warn{background:#F2C94C;}
   .sync-dot.bad{background:#FF6B6B;}
 
-  a.tile.urgent{border-color:var(--accent);box-shadow:0 0 0 1px rgba(79,217,174,0.35);}
+  .tile.urgent{border-color:var(--accent);box-shadow:0 0 0 1px rgba(79,217,174,0.35);}
+
+  .app-frame-wrap{ position:fixed; inset:0; background:var(--bg); z-index:200; }
+  .app-frame{ width:100%; height:100%; border:none; display:block; }
 
   .brand{ margin-bottom:22px; }
   .brand-badge{ font-size:20px; margin-bottom:6px; }
@@ -109,35 +113,39 @@
   <div class="sync-row" id="sync-row"></div>
 
   <div class="tiles" id="tiles">
-    <a class="tile" id="tile-workout" href="https://aaronlikeshoobs.github.io/workout-log/">
+    <button class="tile" id="tile-workout" data-url="https://aaronlikeshoobs.github.io/workout-log/">
       <div class="icon">🏋️</div>
       <div class="info">
         <div class="name">Training Log</div>
         <div class="desc" id="desc-workout">Weekly program, PRs &amp; weight tracking</div>
       </div>
       <div class="arrow">&rsaquo;</div>
-    </a>
+    </button>
 
-    <a class="tile" id="tile-macro" href="https://aaronlikeshoobs.github.io/macro-log/">
+    <button class="tile" id="tile-macro" data-url="https://aaronlikeshoobs.github.io/macro-log/">
       <div class="icon">🍽️</div>
       <div class="info">
         <div class="name">Macro Log</div>
         <div class="desc" id="desc-macro">Daily calories, protein, fat &amp; carbs</div>
       </div>
       <div class="arrow">&rsaquo;</div>
-    </a>
+    </button>
 
-    <a class="tile" id="tile-vitals" href="https://aaronlikeshoobs.github.io/vitals-log/">
+    <button class="tile" id="tile-vitals" data-url="https://aaronlikeshoobs.github.io/vitals-log/">
       <div class="icon">🫀</div>
       <div class="info">
         <div class="name">Vitals Log</div>
         <div class="desc" id="desc-vitals">Body comp, activity &amp; cycling — auto-synced</div>
       </div>
       <div class="arrow">&rsaquo;</div>
-    </a>
+    </button>
   </div>
 
   <footer>🔗 Aaron's Fitness Hub</footer>
+</div>
+
+<div id="app-frame-wrap" class="app-frame-wrap" style="display:none;">
+  <iframe id="app-frame" class="app-frame" title="app"></iframe>
 </div>
 
 <script>
@@ -311,6 +319,19 @@
   }
 
   build();
+
+  // Open sub-apps inside a fullscreen iframe instead of navigating away — keeps everything
+  // inside the Hub's own standalone-app boundary, so iOS never drops into browser chrome.
+  const frameWrap = document.getElementById('app-frame-wrap');
+  const frame = document.getElementById('app-frame');
+  document.getElementById('tiles').addEventListener('click', (e) => {
+    const tile = e.target.closest('.tile');
+    if (!tile) return;
+    frame.src = tile.dataset.url;
+    frameWrap.style.display = 'block';
+  });
+  // A sub-app's own "\u2190 Hub" link uses target="_top", which breaks out of the iframe —
+  // that reloads this top-level page fresh, which naturally hides the iframe again.
 })();
 </script>
 </body>
