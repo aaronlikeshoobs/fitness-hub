@@ -168,7 +168,11 @@
     const today = todayStr();
     const entries = (data.entries || []).filter(e => e.date === today && e.kind !== 'symptom' && e.status !== 'pending' && e.status !== 'estimating');
     const t = entries.reduce((a,e) => ({ cal: a.cal+(e.cal||0), protein: a.protein+(e.protein||0) }), { cal:0, protein:0 });
-    const tg = data.targets || { cal: 1750, protein: 170 };
+    const presetKey = data.dayTypes && data.dayTypes[today];
+    const tg = (presetKey && data.targetPresets && data.targetPresets[presetKey])
+      || (data.targetPresets && data.targetPresets.standard)
+      || data.targets
+      || { cal: 1750, protein: 170 };
     const proteinLeft = tg.protein - t.protein;
     const calLeft = tg.cal - t.cal;
     const hour = new Date().getHours();
