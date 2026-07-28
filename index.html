@@ -76,10 +76,31 @@
   .sync-dot.bad{background:#FF6B6B;}
 
   a.tile.urgent{border-color:var(--accent);box-shadow:0 0 0 1px rgba(79,217,174,0.35);}
+
+  .brand{ margin-bottom:22px; }
+  .brand-badge{ font-size:20px; margin-bottom:6px; }
+  .brand-title{
+    font-size:25px; font-weight:900; line-height:1.05; letter-spacing:-0.01em;
+    text-transform:uppercase;
+    background: linear-gradient(120deg, #4FD9AE 0%, #EAEFEC 55%, #4FD9AE 100%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .brand-tag{
+    font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.18em;
+    color:var(--muted); margin-top:9px; text-transform:uppercase;
+    display:flex; align-items:center; gap:8px;
+  }
+  .brand-tag .dot{ width:4px; height:4px; border-radius:50%; background:var(--accent); flex-shrink:0; }
 </style>
 </head>
 <body>
 <div class="wrap">
+  <div class="brand">
+    <div class="brand-badge">⚡</div>
+    <div class="brand-title">AAARON'S<br>SUPER AWESOME<br>WORKOUT APP</div>
+    <div class="brand-tag">TRAINING <span class="dot"></span> MACRO <span class="dot"></span> VITALS</div>
+  </div>
+
   <div class="today-card">
     <div class="today-head">☀️ Today</div>
     <div id="today-body"><div class="today-skeleton">Checking your apps&hellip;</div></div>
