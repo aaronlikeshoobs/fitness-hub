@@ -25,16 +25,16 @@
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
   html,body{background:var(--bg);color:var(--text);height:100%;}
   body{font-family:'Public Sans',-apple-system,sans-serif;-webkit-font-smoothing:antialiased;touch-action:manipulation;}
-  .wrap{max-width:520px;margin:0 auto;padding:max(32px,env(safe-area-inset-top)) 20px 48px;}
+  .wrap{max-width:520px;margin:0 auto;padding:max(18px,env(safe-area-inset-top)) 20px 32px;}
   .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
   h1{font-size:30px;font-weight:700;letter-spacing:-0.01em;margin-bottom:6px;}
   .sub{color:var(--muted);font-size:13.5px;margin-bottom:36px;}
-  .tiles{display:flex;flex-direction:column;gap:14px;}
+  .tiles{display:flex;flex-direction:column;gap:10px;}
   a.tile{
-    display:flex;align-items:center;gap:16px;
-    background:var(--panel);border:1px solid var(--line);border-radius:16px;
-    padding:20px 18px;text-decoration:none;color:var(--text);
-    min-height:72px;
+    display:flex;align-items:center;gap:14px;
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:14px 16px;text-decoration:none;color:var(--text);
+    min-height:64px;
     transition:border-color .15s ease, transform .1s ease, background .15s ease;
   }
   a.tile:active{transform:scale(0.97);border-color:var(--accent);background:#1B2320;}
@@ -48,19 +48,19 @@
   .tile .name{font-size:17px;font-weight:700;}
   .tile .desc{font-size:13px;color:var(--muted);margin-top:3px;line-height:1.4;}
   .tile .arrow{color:var(--muted);font-size:22px;flex-shrink:0;}
-  footer{text-align:center;padding-top:40px;color:var(--muted);font-size:11px;font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center;gap:6px;}
+  footer{text-align:center;padding-top:20px;color:var(--muted);font-size:11px;font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center;gap:6px;}
 
-  .today-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:28px;}
-  .today-head{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);margin-bottom:14px;display:flex;align-items:center;gap:6px;}
-  .today-row{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);}
+  .today-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:16px;}
+  .today-head{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+  .today-row{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);}
   .today-row:last-child{border-bottom:none;}
   .today-row .em{font-size:18px;flex-shrink:0;width:24px;text-align:center;}
   .today-row .txt{font-size:13.5px;line-height:1.5;flex:1;}
   .today-row .txt b{font-weight:600;}
   .today-skeleton{color:var(--muted);font-size:13px;font-family:'IBM Plex Mono',monospace;}
 
-  .sync-row{display:flex;gap:14px;margin-bottom:28px;flex-wrap:wrap;}
-  .sync-pill{display:flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:6px 12px;}
+  .sync-row{display:flex;gap:8px;margin-bottom:18px;flex-wrap:nowrap;}
+  .sync-pill{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:7px 6px;white-space:nowrap;}
   .sync-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
   .sync-dot.ok{background:var(--accent);}
   .sync-dot.warn{background:#F2C94C;}
@@ -70,9 +70,6 @@
 <body>
 <div class="wrap">
   <div class="eyebrow">💚 Aaron's Fitness Hub</div>
-  <h1>Your apps</h1>
-  <div class="sub">Pick one to open</div>
-
   <div class="today-card">
     <div class="today-head">☀️ Today</div>
     <div id="today-body"><div class="today-skeleton">Checking your apps&hellip;</div></div>
@@ -243,9 +240,9 @@
     const syncRow = document.getElementById('sync-row');
     const pill = (label, state) => `<div class="sync-pill"><span class="sync-dot ${state}"></span>${label}</div>`;
     let pills = '';
-    pills += pill('Training ' + (tr ? 'synced' : 'unreachable'), tr ? 'ok' : 'bad');
-    pills += pill('Macro ' + (mc ? 'synced' : 'unreachable'), mc ? 'ok' : 'bad');
-    pills += pill('Vitals ' + (vt ? (vt.notable ? 'check' : 'synced') : 'unreachable'), vt ? (vt.notable ? 'warn' : 'ok') : 'bad');
+    pills += pill('Training', tr ? 'ok' : 'bad');
+    pills += pill('Macro', mc ? 'ok' : 'bad');
+    pills += pill('Vitals', vt ? (vt.notable ? 'warn' : 'ok') : 'bad');
     syncRow.innerHTML = pills;
   }
 
