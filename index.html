@@ -327,7 +327,14 @@
   document.getElementById('tiles').addEventListener('click', (e) => {
     const tile = e.target.closest('.tile');
     if (!tile) return;
-    frame.src = tile.dataset.url;
+    frame.onload = () => { try { frame.contentWindow.scrollTo(0, 0); } catch (err) {} };
+    if (frame.src === tile.dataset.url) {
+      // same URL as last time — assigning identical src won't force a reload in some browsers,
+      // so scroll it back to top directly instead of relying on onload firing again
+      try { frame.contentWindow.scrollTo(0, 0); } catch (err) {}
+    } else {
+      frame.src = tile.dataset.url;
+    }
     frameWrap.style.display = 'block';
   });
   // A sub-app's own "\u2190 Hub" link uses target="_top", which breaks out of the iframe —
